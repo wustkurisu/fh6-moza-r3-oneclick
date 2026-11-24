@@ -146,7 +146,6 @@ function Install-R3Configuration {
     $profileNames = @{ '0005' = $canonical; '0015' = $secondary }
     $profileIds = @{ '0005' = $canonicalId; '0015' = $secondaryId }
     $mappings = @{}
-    $ffb = @{}
     foreach ($id in @('0005', '0015')) {
         $profilePath = Join-Path $PresetDirectory ('inputmappingprofiles\' + $profileNames[$id])
         $mappings[$id] = [IO.File]::ReadAllText($profilePath)
@@ -157,9 +156,6 @@ function Install-R3Configuration {
             $profile.SelectNodes('Context/Value').Count -ne 133) {
             throw "R3 $id 的预设校验失败。请完整解压配置包。"
         }
-        $name = "ControllerFFB-0X346E$id.ini"
-        $ffb[$name] = [IO.File]::ReadAllText((Join-Path $PresetDirectory ('wheeltunablesettingspc\' + $name)))
-        if ($ffb[$name] -notmatch "(?m)^VendorProduct\s+$device\s*$") { throw "R3 $id 的力反馈文件校验失败。" }
     }
 
     # Install the detected mode in the game's stock filename and GUID.
@@ -169,19 +165,25 @@ function Install-R3Configuration {
         $secondary = $mappings[$otherId].Replace($profileIds[$otherId], $secondaryId)
     }
     $media = Join-Path $Directory 'media'
-    $archives = @(
-        @{ Name = 'inputmappingprofiles.zip'; Entries = $mappingsToInstall }
-        @{ Name = 'wheeltunablesettingspc.zip'; Entries = $ffb }
-    )
-    $changes = @(
-        foreach ($archive in $archives) {
-            $path = Join-Path $media $archive.Name
-            $hash = Get-ContentHash $path
-            if (-not (Test-ArchiveContents $path $archive.Entries)) {
-                @{ Path = $path; Name = $archive.Name; Entries = $archive.Entries; OriginalHash = $hash }
-            }
-        }
-    )
+    $changes = @()
+    $inputArchive = Join-Path $media 'inputmappingprofiles.zip'
+    $inputHash = Get-ContentHash $inputArchive
+    if (-not (Test-ArchiveContents $inputArchive $mappingsToInstall)) {
+        $changes += @{ Path = $inputArchive; Name = 'inputmappingprofiles.zip'; Entries = $mappingsToInstall; OriginalHash = $inputHash }
+    }
+
+    # Keep existing game-side FFB tuning. Add a device entry only when it's missing.
+    $ffbArchive = Join-Path $media 'wheeltunablesettingspc.zip'
+    $ffbHash = Get-ContentHash $ffbArchive
+    $ffbName = "ControllerFFB-0X346E$DeviceId.ini"
+    $zip = [IO.Compression.ZipFile]::OpenRead($ffbArchive)
+    try { $ffbExists = $zip.Entries.FullName -contains $ffbName }
+    finally { $zip.Dispose() }
+    if (-not $ffbExists) {
+        $ffb = [IO.File]::ReadAllText((Join-Path $PresetDirectory ('wheeltunablesettingspc\' + $ffbName)))
+        if ($ffb -notmatch "(?m)^VendorProduct\s+0x346e$DeviceId\s*$") { throw "R3 $DeviceId 的备用力反馈文件校验失败。" }
+        $changes += @{ Path = $ffbArchive; Name = 'wheeltunablesettingspc.zip'; Entries = @{ $ffbName = $ffb }; OriginalHash = $ffbHash }
+    }
 
     if ($SelectionFile) {
         try {
@@ -277,8 +279,8 @@ function Install-R3Configuration {
         if ($changes | Where-Object Name -eq 'LastUsedProfile') { Write-Host "原方案选择文件位置 $SelectionFile" }
     }
 
-    if ($SelectionFile) { Write-Host '安装完成，已选中 R3 预设。现在可以启动游戏。' }
-    else { Write-Host '预设已安装。首次进入游戏可选择 R3 默认方案，或在游戏生成设置后退出并重跑安装器。' }
+    if ($SelectionFile) { Write-Host '安装完成，已切换到新键位。现在可以启动游戏。' }
+    else { Write-Host '新键位已安装。如果进游戏后仍在用旧键位，可在方向盘设置的「配置」栏切到最左侧的方案。' }
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
