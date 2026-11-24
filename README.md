@@ -34,6 +34,14 @@ Install.cmd -GamePath "D:\SteamLibrary\steamapps\common\ForzaHorizon6"
 
 试顺手后，可以在方向盘设置里把这套键位另存到空的自定义槽，例如「自定义方向盘 1」，以后切换方案时方便找回。这一步可以等试完再做。
 
+## ES 方向盘键位图
+
+![ES 方向盘盘面与游戏功能对照图](keymap-es.png)
+
+**离合**预绑在第三块踏板上，游戏显示为「轴 7」。加装 SR-P Lite 离合踏板后，可在游戏里选「手动挡＋离合器」。双踏板玩家选普通「手动挡」，就可以用左右拨片换挡。 [魔爪 R3 踏板说明](https://us.mozaracing.com/pages/r3-racing-wheel-and-pedals-for-pc)
+
+盘面位置参考魔爪的 ES 示意图。 [魔爪官方按键指南](https://support.mozaracing.com/en/support/solutions/articles/70000679639-button-numbering-guide)
+
 ## 力反馈
 
 基座的力反馈强度、阻尼等参数继续用你在 Pit House 选的预设。安装器只在游戏缺少当前设备 ID 对应的力反馈条目时补上这一项。原生模式通常已由游戏自带。
